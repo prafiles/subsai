@@ -1,10 +1,18 @@
-torch==2.13.0
-openai-whisper==20230124
+# torch is deliberately capped at 2.8.0, below the "patched" version of 3 open
+# alerts: whisperx pins pyannote.audio from git, and pyannote calls
+# torchaudio.set_audio_backend / torchaudio.AudioMetaData, both removed in
+# torchaudio >=2.9 (whisperx itself pins torch~=2.8.0). Bumping torch past 2.8
+# makes `import subsai` fail outright. Lift this only by dropping the whisperX
+# backend. See the PR discussion before "fixing" this with a Dependabot bump.
+torch==2.8.0
+torchaudio==2.8.0
+openai-whisper==20240930
 streamlit~=1.20.0
 streamlit_player~=0.1.5
 streamlit-aggrid~=0.3.4
 ffsubsync~=0.4.24
 whisper-timestamped @ git+https://github.com/linto-ai/whisper-timestamped
+numpy<2
 pandas==1.5.3
 pysubs2~=1.6.0
 pywhispercpp==1.1.1
