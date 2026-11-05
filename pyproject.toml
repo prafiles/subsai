@@ -28,3 +28,25 @@ dependencies = {file = ["requirements.txt"]}
 [project.scripts]
 subsai = 'subsai.cli:main'
 subsai-webui = 'subsai.webui:run'
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7",
+    "pytest-cov>=4",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra -m 'not slow'"
+markers = [
+    "slow: downloads real ML model weights / needs heavy compute (deselected by default)",
+]
+
+[tool.coverage.run]
+source = ["subsai"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+]
