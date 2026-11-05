@@ -1,8 +1,8 @@
 #FROM python:3.10.6
 # Base must match the torch pin in requirements.txt: the old
-# pytorch/pytorch:2.0.1-... base baked vulnerable torch 2.0.1 into the image
-# layer, so bumping requirements.txt alone left the container exposed.
-FROM pytorch/pytorch:2.8.0-cuda12.8-cudnn9-runtime
+# pytorch/pytorch:2.0.1-... base baked vulnerable torch into the image layer,
+# so bumping requirements.txt alone left the container exposed.
+FROM pytorch/pytorch:2.13.0-cuda12.6-cudnn9-runtime
 
 WORKDIR /subsai
 

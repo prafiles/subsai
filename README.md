@@ -34,13 +34,9 @@
     * > faster-whisper is a reimplementation of OpenAI's Whisper model using [CTranslate2](https://github.com/OpenNMT/CTranslate2/), which is a fast inference engine for Transformer models.
       >
       > This implementation is up to 4 times faster than [openai/whisper](https://github.com/openai/whisper) for the same accuracy while using less memory. The efficiency can be further improved with 8-bit quantization on both CPU and GPU.
-  * [x] :new: [m-bain /whisperX](https://github.com/m-bain/whisperX)
-    * >fast automatic speech recognition (70x realtime with large-v2) with word-level timestamps and speaker diarization.
-      >- ⚡️ Batched inference for 70x realtime transcription using whisper large-v2
-      >- 🪶 [faster-whisper](https://github.com/guillaumekln/faster-whisper) backend, requires <8GB gpu memory for large-v2 with beam_size=5
-      >- 🎯 Accurate word-level timestamps using wav2vec2 alignment
-      >- 👯‍♂️ Multispeaker ASR using speaker diarization from [pyannote-audio](https://github.com/pyannote/pyannote-audio) (speaker ID labels) 
-      >- 🗣️ VAD preprocessing, reduces hallucination & batching with no WER degradation.
+  * [ ] ~~[m-bain /whisperX](https://github.com/m-bain/whisperX)~~ — removed: whisperX pins
+    `torch~=2.8.0` and its pyannote dependency uses torchaudio APIs removed in torchaudio >=2.9,
+    which blocked patching the open torch security advisories.
 
 * Web UI
   * Fully offline, no third party services 
