@@ -1,0 +1,56 @@
+name: tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # CPU-only wheels; torch/torchaudio are pinned in requirements.txt but are
+      # installed first from the PyTorch CPU index so no CUDA wheel is pulled.
+      - name: Install torch (CPU wheels)
+        run: |
+          pip install --extra-index-url https://download.pytorch.org/whl/cpu \
+              torch==2.13.0 torchaudio==2.11.0
+
+      # openai-whisper's legacy setup.py imports pkg_resources at build time;
+      # setuptools>=81 removed it, so build without isolation against a pinned
+      # setuptools.
+      - name: Install openai-whisper
+        run: |
+          pip install "setuptools<81" wheel
+          pip install --no-build-isolation openai-whisper==20240930
+
+      # faster-whisper 0.5.1 pins av<11; av 10.x has no wheels for Python 3.11
+      # and its sdist cannot build against the runner's ffmpeg 7. Install a
+      # modern av wheel plus faster-whisper's other deps, then faster-whisper
+      # itself with --no-deps (its av pin is advisory; av>=14 works fine).
+      - name: Install faster-whisper (with av>=14 workaround)
+        run: |
+          pip install "av>=14" ctranslate2 tokenizers huggingface_hub onnxruntime
+          pip install --no-deps faster-whisper==0.5.1
+
+      # Remaining runtime deps (pywhispercpp 1.1.1 ships manylinux wheels).
+      - name: Install requirements
+        run: |
+          grep -v faster_whisper requirements.txt > requirements-nofw.txt
+          pip install -r requirements-nofw.txt
+
+      - name: Install subsai and pytest
+        run: |
+          pip install -e . --no-deps
+          pip install pytest pytest-cov
+
+      # Default run excludes the `slow` marker (real model-weight downloads).
+      - name: Run tests
+        run: pytest --cov=subsai --cov-report=term-missing
