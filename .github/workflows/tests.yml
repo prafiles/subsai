@@ -16,6 +16,11 @@ jobs:
         with:
           python-version: "3.11"
 
+      # ffsubsync and merge_subs_with_video shell out to ffmpeg/ffprobe;
+      # recent ubuntu-latest images no longer ship them.
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+
       # CPU-only wheels; torch/torchaudio are pinned in requirements.txt but are
       # installed first from the PyTorch CPU index so no CUDA wheel is pulled.
       - name: Install torch (CPU wheels)
