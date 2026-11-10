@@ -10,11 +10,14 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
 
       # ffsubsync and merge_subs_with_video shell out to ffmpeg/ffprobe;
       # recent ubuntu-latest images no longer ship them.
@@ -38,14 +41,15 @@ jobs:
 
       # faster-whisper 0.5.1 pins av<11; av 10.x has no wheels for Python 3.11
       # and its sdist cannot build against the runner's ffmpeg 7. Install a
-      # modern av wheel plus faster-whisper's other deps, then faster-whisper
-      # itself with --no-deps (its av pin is advisory; av>=14 works fine).
-      - name: Install faster-whisper (with av>=14 workaround)
+      # compatible av wheel plus faster-whisper's other deps, then faster-whisper
+      # itself with --no-deps. PyAV 19 removed the metadata_errors argument
+      # used by this faster-whisper release.
+      - name: Install faster-whisper (with compatible av wheel)
         run: |
-          pip install "av>=14" ctranslate2 tokenizers huggingface_hub onnxruntime
+          pip install "av>=14,<19" ctranslate2 tokenizers huggingface_hub onnxruntime
           pip install --no-deps faster-whisper==0.5.1
 
-      # Remaining runtime deps (pywhispercpp 1.1.1 ships manylinux wheels).
+      # Remaining runtime deps (pywhispercpp>=1.3.3 ships cp311/cp312 wheels).
       - name: Install requirements
         run: |
           grep -v faster_whisper requirements.txt > requirements-nofw.txt
@@ -59,3 +63,35 @@ jobs:
       # Default run excludes the `slow` marker (real model-weight downloads).
       - name: Run tests
         run: pytest --cov=subsai --cov-report=term-missing
+
+  docker-build:
+    name: Build container image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Load the result for runtime smoke checks. The CUDA base is ~3.7 GB,
+      # so cache layers across runs.
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: subsai:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test image
+        run: |
+          docker run --rm subsai:ci subsai --help
+          docker run --rm subsai:ci ffmpeg -version
+          docker run --rm subsai:ci ffprobe -version
+
+      - name: Test installed app in container
+        run: |
+          docker run --rm -v "$PWD/tests:/tests:ro" subsai:ci \
+            sh -c 'pip install --no-cache-dir pytest && pytest /tests -ra -m "not slow" -p no:cacheprovider'

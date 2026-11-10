@@ -159,6 +159,13 @@ class TestWhisperTimeStamped:
 
 
 class TestFasterWhisperModel:
+    def test_decode_audio_with_installed_pyav(self, tiny_wav):
+        from faster_whisper.audio import decode_audio
+
+        audio = decode_audio(tiny_wav)
+        assert audio.dtype.name == 'float32'
+        assert audio.shape == (32000,)
+
     def test_load_kwargs(self, monkeypatch):
         captured = {}
 
@@ -232,6 +239,28 @@ class TestFasterWhisperModel:
 
 
 class TestWhisperCppModel:
+    @pytest.mark.parametrize('config', [{}, {'n_threads': 8, 'translate': True}])
+    def test_params_accepted_by_native_backend(self, monkeypatch, config):
+        import _pywhispercpp as native
+        from pywhispercpp.model import Model
+
+        if getattr(native, '__file__', None) is None:
+            pytest.skip('real pywhispercpp extension not installed')
+
+        def validate_params(model, **params):
+            native_params = native.whisper_full_default_params(
+                native.whisper_sampling_strategy.WHISPER_SAMPLING_GREEDY)
+            # Exercise the real parameter setter, replacing only model loading
+            # so no weights are downloaded or native model context allocated.
+            backend = types.SimpleNamespace(_params=native_params)
+            Model._set_params(backend, params)
+            return backend
+
+        monkeypatch.setattr('subsai.models.whispercpp_model.Model', validate_params)
+        model = WhisperCppModel(config)
+        assert model.model._params.n_threads == config.get('n_threads', 4)
+        assert model.model._params.translate == config.get('translate', False)
+
     def test_none_params_dropped(self, monkeypatch):
         captured = {}
 
