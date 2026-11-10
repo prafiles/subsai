@@ -54,6 +54,15 @@ class TestMediaFileBase64:
 
 
 class TestSubsDf:
+    def test_subtitle_grid_serialization(self, sample_subs):
+        from st_aggrid import AgGrid
+
+        # Exercise the actual component path, including its PyArrow import.
+        # Pure DataFrame helper tests alone miss incompatible binary deps.
+        df = webui._subs_df(sample_subs)
+        result = AgGrid(df, try_to_convert_back_to_original_types=False)
+        assert result.data.equals(df)
+
     def test_none_gives_empty_frame(self):
         df = webui._subs_df(None)
         assert list(df.columns) == ['Start time', 'End time', 'Text']

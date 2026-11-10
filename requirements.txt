@@ -11,6 +11,9 @@ streamlit-aggrid~=0.3.4
 ffsubsync~=0.4.24
 whisper-timestamped @ git+https://github.com/linto-ai/whisper-timestamped
 numpy<2
+# PyArrow 26 requires NumPy >=2 at import time; Streamlit's subtitle grid
+# needs a PyArrow release compatible with the NumPy 1.x pin above.
+pyarrow<26
 # pandas 1.5.3 has no cp312 wheels and its sdist does not build on Python 3.12
 # (the CUDA base is Ubuntu 24.04 / py3.12); 2.2.x ships cp312 wheels and the
 # only use site (webui table helper) is 2.x-compatible.
