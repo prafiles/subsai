@@ -13,10 +13,12 @@ ENV DEBIAN_FRONTEND=noninteractive
 # externally managed, and this image is a purpose-built app container,
 # so pip installs into it directly as before.
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
-RUN apt-get update && \
+# Avoid stalled HTTP mirror downloads on hosted CI runners.
+RUN sed -i 's|http://|https://|g' /etc/apt/sources.list.d/ubuntu.sources && \
+    printf '%s\n' 'Acquire::Retries "3";' 'Acquire::https::Timeout "30";' > /etc/apt/apt.conf.d/80-build-retries && \
+    apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y git && \
-    apt-get -y install gcc g++ cmake mono-mcs ffmpeg && \
+    apt-get install -y --no-install-recommends git gcc g++ cmake mono-mcs ffmpeg && \
     rm -rf /var/lib/apt/lists/*
 
 # openai-whisper has no wheel, so its sdist builds against a pre-installed toolchain
